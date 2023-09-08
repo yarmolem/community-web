@@ -96,17 +96,6 @@ const MainMap = (props: Props) => {
           'circle-stroke-color': '#fff'
         }
       })
-
-      map.on('click', 'clusters', (e) => {
-        const features = map.queryRenderedFeatures(e.point, {
-          layers: ['clusters']
-        })
-        const clusterId = features?.[0].properties?.cluster_id
-
-        const source = map.getSource('earthquakes')
-
-        console.log({ source })
-      })
     })
   }, [])
 
