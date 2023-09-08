@@ -1,15 +1,70 @@
 import mapbox from 'mapbox-gl'
-import { useEffect, useRef, useState } from 'react'
+import { forwardRef, useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 import { env } from '@/enviroment'
+import { create } from 'zustand'
+import { Button } from '../ui/button'
 
 type Props = {
   className?: string
 }
 
+interface PropertyGeoJSON {
+  id: string
+  name: string
+  lastname: string
+  category: string
+  avatar: string
+  price: string
+}
+
+const useMapPopup = create<{
+  especialist: PropertyGeoJSON | null
+  set: (data: PropertyGeoJSON | null) => void
+}>((set) => ({
+  especialist: null,
+  set: (especialist) => set({ especialist })
+}))
+
+const PopupBase = forwardRef<HTMLDivElement>((_, ref) => {
+  const especialist = useMapPopup((state) => state.especialist)
+
+  return (
+    <div className="hidden">
+      <div ref={ref} className="w-[240px] bg-white">
+        <div className="w-full aspect-square relative">
+          <img
+            src={especialist?.avatar}
+            alt={`${especialist?.name} ${especialist?.lastname}`}
+            className="absolute inset-0 w-full h-full"
+          />
+        </div>
+
+        <div className="p-2 text-sm font-sans">
+          <p>
+            {especialist?.name} {especialist?.lastname}
+          </p>
+          <p className="text-muted-foreground">{especialist?.category}</p>
+          <p className="text-muted-foreground mb-3">$ {especialist?.price}</p>
+
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full"
+            onClick={() => alert(`Especialist: ${especialist?.name}`)}
+          >
+            Detalle
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+})
+
 const MainMap = (props: Props) => {
   const mapRef = useRef<mapboxgl.Map | null>(null)
+  const popupRef = useRef<HTMLDivElement>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
 
   const [zoom] = useState(9)
@@ -30,11 +85,11 @@ const MainMap = (props: Props) => {
     mapRef.current = map
 
     map.on('load', () => {
+      // LOAD START
+
       map.addSource('earthquakes', {
         type: 'geojson',
-        // Point to GeoJSON data. This example visualizes all M1.0+ earthquakes
-        // from 12/22/15 to 1/21/16 as logged by USGS' Earthquake hazards program.
-        data: 'https://docs.mapbox.com/mapbox-gl-js/assets/earthquakes.geojson',
+        data: '/data/example-geojson.json',
         cluster: true,
         clusterMaxZoom: 14, // Max zoom to cluster points on
         clusterRadius: 50 // Radius of each cluster when clustering points (defaults to 50)
@@ -96,14 +151,69 @@ const MainMap = (props: Props) => {
           'circle-stroke-color': '#fff'
         }
       })
+
+      // inspect a cluster on click
+      map.on('click', 'clusters', (e) => {
+        const features = map.queryRenderedFeatures(e.point, {
+          layers: ['clusters']
+        })
+
+        const feature = features?.[0]
+        const clusterId = feature.properties?.cluster_id
+        const source = map.getSource('earthquakes') as mapboxgl.GeoJSONSource
+
+        source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+          if (err || feature.geometry.type !== 'Point') return
+
+          const center = feature.geometry.coordinates as mapboxgl.LngLatLike
+          map.easeTo({ center, zoom })
+        })
+      })
+
+      map.on('click', 'unclustered-point', (e) => {
+        const feature = e.features?.[0]
+
+        if (!feature) return null
+        if (feature.geometry.type !== 'Point') return null
+
+        const coordinates = feature.geometry.coordinates as [number, number]
+        const properties = feature.properties as PropertyGeoJSON
+
+        // Ensure that if the map is zoomed out such that
+        // multiple copies of the feature are visible, the
+        // popup appears over the copy being pointed to.
+        while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+          coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360
+        }
+
+        useMapPopup.getState().set(properties)
+
+        new mapbox.Popup({ closeButton: false })
+          .setLngLat(coordinates)
+          .setDOMContent(popupRef.current!)
+          .addTo(map)
+      })
+
+      map.on('mouseenter', 'clusters', () => {
+        map.getCanvas().style.cursor = 'pointer'
+      })
+      map.on('mouseleave', 'clusters', () => {
+        map.getCanvas().style.cursor = ''
+      })
+
+      // LOAD END
     })
   }, [])
 
   return (
-    <div
-      ref={mapContainerRef}
-      className={cn('w-full h-full', props.className)}
-    />
+    <>
+      <PopupBase ref={popupRef} />
+
+      <div
+        ref={mapContainerRef}
+        className={cn('w-full h-full', props.className)}
+      />
+    </>
   )
 }
 

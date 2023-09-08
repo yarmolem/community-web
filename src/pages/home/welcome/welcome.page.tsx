@@ -2,22 +2,24 @@ import MainMap from '@/components/shared/main-map'
 import GlassBox from '@/components/shared/glass-box'
 
 const CATEGORIES = [
-  {
-    id: 1,
-    name: 'Psicólogo Infantil'
-  },
-  {
-    id: 2,
-    name: 'Depresión'
-  },
-  {
-    id: 3,
-    name: 'Terapia'
-  },
-  {
-    id: 4,
-    name: 'Psicólogo Infantil'
-  }
+  { id: 1, name: 'Psicología Clínica' },
+  { id: 2, name: 'Psicología del Deporte' },
+  { id: 3, name: 'Psicología Educativa' },
+  { id: 4, name: 'Psicología Social' },
+  { id: 5, name: 'Neuropsicología' },
+  { id: 6, name: 'Psicología Forense' },
+  { id: 7, name: 'Psicología de la Salud' },
+  { id: 8, name: 'Psicología Organizacional' },
+  { id: 9, name: 'Psicología Infantil' },
+  { id: 10, name: 'Psicología Gerontológica' },
+  { id: 11, name: 'Psicología Transpersonal' },
+  { id: 12, name: 'Terapia Cognitivo-Conductual' },
+  { id: 13, name: 'Terapia Gestalt' },
+  { id: 14, name: 'Terapia Psicoanalítica' },
+  { id: 15, name: 'Terapia Familiar' },
+  { id: 16, name: 'Terapia de Juego' },
+  { id: 17, name: 'Terapia de Arte' },
+  { id: 18, name: 'Otras Categorías de Psicología' }
 ]
 
 const WelcomePage = () => {
